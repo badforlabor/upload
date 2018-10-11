@@ -51,8 +51,22 @@ func upload(w http.ResponseWriter, r *http.Request)  {
 		io.Copy(writer, file)
 		fmt.Println("接受到的文件内容是：", buff.String())
 	}
-
 	fmt.Println("接收到文件", user, password, handler.Filename) //test 123456 json.zip
+
+	// 接受内存内容
+	file2, handler2, err := r.FormFile("uploadmemory")
+	if err != nil {
+		fmt.Println(err, "--------1------------")//上传错误
+	}
+	defer file2.Close()
+	{
+		buff := bytes.NewBufferString("")
+		writer := bufio.NewWriter(buff)
+		io.Copy(writer, file2)
+		fmt.Println("接受到的文件内容是：", handler2.Filename, buff.String())
+	}
+
+
 
 
 }

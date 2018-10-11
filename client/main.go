@@ -25,8 +25,6 @@ func postFile() error {
 	testfile := "test.bin"
 	url := "http://127.0.0.1:9090/upload"
 
-	var pendingReader io.Reader = nil
-
 	//打开文件句柄操作
 	file, err := os.Open(testfile)
 	if err != nil {
@@ -34,16 +32,6 @@ func postFile() error {
 		return err
 	}
 	defer file.Close()
-
-	buff := bytes.NewBufferString("memory content.")
-	memReader := bufio.NewReader(buff)
-
-	// 传输文件时，即可以是文件，也可以是内存中的内容。
-	if gTransFile {
-		pendingReader = file
-	} else {
-		pendingReader = memReader
-	}
 
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -55,13 +43,23 @@ func postFile() error {
 		return err
 	}
 
-
 	//iocopy
-	_, err = io.Copy(fileWriter, pendingReader)
+	_, err = io.Copy(fileWriter, file)
 	if err != nil {
 		return err
 	}
 
+	// 传输内存中的内容
+
+	buff := bytes.NewBufferString("memory content.")
+	memReader := bufio.NewReader(buff)
+
+	fileWriter, err = bodyWriter.CreateFormFile("uploadmemory", "key_mem")
+	if err != nil {
+		fmt.Println("error writing to buffer")
+		return err
+	}
+	_, err = io.Copy(fileWriter, memReader)
 
 	////设置其他参数
 	//params := map[string]string{
@@ -89,7 +87,6 @@ func postFile() error {
 	if _, err = fileWriter.Write([]byte("123456")); err != nil {
 		fmt.Println(err, "----------5--------------")
 	}
-
 
 	contentType := bodyWriter.FormDataContentType()
 	bodyWriter.Close()
